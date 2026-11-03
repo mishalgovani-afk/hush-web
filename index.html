@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Hush</title>
+<meta name="description" content="Silent speech: mouth words at your phone's camera and Hush turns them into text. Runs entirely on-device.">
+<meta name="theme-color" content="#f6f6f8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0f0f13" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Hush">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div id="app">
+  <header class="topbar">
+    <div class="brand"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M4 16c4-6 8-8 12-5 4-3 8-1 12 5-4 5-8 7-12 7S8 21 4 16Z" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"/><path d="M7.5 16h17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Hush</div>
+    <label class="cond"><span class="sr">Condition</span>
+      <select id="condition"></select>
+    </label>
+  </header>
+
+  <section class="stage" id="stage">
+    <video id="video" playsinline muted autoplay></video>
+    <canvas id="overlay"></canvas>
+    <div class="chip" id="faceChip"><span class="dot"></span><span id="faceText">Camera off</span></div>
+    <div class="rec" id="recChip" hidden>● <span id="recCount">0</span></div>
+    <div class="start" id="startPanel">
+      <h1>Silent speech, on your phone</h1>
+      <p>Mouth words at the camera. Hush learns <em>your</em> lips and turns them into text.</p>
+      <button class="btn primary" id="startBtn">Start camera</button>
+      <p class="fine" id="startStatus">Everything runs on this device. Video never leaves your phone.</p>
+    </div>
+  </section>
+
+  <main>
+    <!-- TRAIN -->
+    <section class="panel" id="panel-train">
+      <div class="prompt">
+        <div class="prompt-label">Mouth this word</div>
+        <div class="prompt-word" id="promptWord">yes</div>
+        <div class="prompt-info" id="takeInfo">Hold the button, mouth the word, release.</div>
+      </div>
+      <div class="words" id="wordChips" role="listbox" aria-label="Vocabulary"></div>
+      <form class="add" id="addForm">
+        <input id="newWord" placeholder="Add a word" autocomplete="off" autocapitalize="off" enterkeyhint="done">
+        <button class="btn" type="submit">Add</button>
+      </form>
+      <div class="row">
+        <label class="switch"><input type="checkbox" id="autoAdvance"><span></span>Auto-advance to least-recorded</label>
+      </div>
+      <div class="row">
+        <button class="btn ghost" id="undoTake" disabled>Undo last take</button>
+        <button class="btn ghost danger" id="removeWord">Remove word</button>
+      </div>
+      <details class="help"><summary>How to train well</summary>
+        <ol>
+          <li>Prop the phone up so your mouth is centred and evenly lit.</li>
+          <li>Record 8–15 takes per word. Start and end each take with your lips closed and relaxed.</li>
+          <li>Record <b>_noise</b> takes: smiling, yawning, swallowing, talking to someone. Anything closest to a word starting with “_” is ignored.</li>
+          <li>Use <b>Check</b> before trusting Decode.</li>
+        </ol>
+      </details>
+    </section>
+
+    <!-- CHECK -->
+    <section class="panel" id="panel-check" hidden>
+      <div class="card">
+        <div class="card-title">Features</div>
+        <div class="toggles" id="groupToggles"></div>
+        <div class="grid2">
+          <label>Takes<select id="evalCondition"></select></label>
+          <label>Permutations<select id="permutations"><option>100</option><option>500</option><option>1000</option></select></label>
+          <label>Neighbours (k)<select id="kSel"><option>1</option><option>2</option><option>3</option></select></label>
+          <label>Smoothing<select id="smoothSel"><option>1</option><option>3</option><option>5</option><option>7</option></select></label>
+        </div>
+        <label class="switch"><input type="checkbox" id="deltas"><span></span>Add movement speed (deltas)</label>
+        <div class="row">
+          <button class="btn primary" id="evalBtn">Check accuracy</button>
+          <button class="btn" id="ablateBtn">Compare features</button>
+        </div>
+        <div class="progress" id="evalProgress" hidden><div></div></div>
+        <p class="fine" id="evalStatus">Leave-one-out accuracy vs 500 shuffled-label runs. p &lt; 0.05 means your lips really separate the words.</p>
+      </div>
+      <div id="evalResult"></div>
+    </section>
+
+    <!-- DECODE -->
+    <section class="panel" id="panel-decode" hidden>
+      <div class="decoded">
+        <div class="decoded-word" id="decodedWord">Ready</div>
+        <div class="decoded-detail" id="decodedDetail">Hold the button and mouth a word.</div>
+      </div>
+      <div class="transcript" id="transcript" aria-live="polite"></div>
+      <div class="row">
+        <button class="btn" id="copyBtn">Copy</button>
+        <button class="btn" id="shareBtn">Share</button>
+        <button class="btn ghost" id="clearBtn">Clear</button>
+      </div>
+      <div class="card">
+        <label class="switch"><input type="checkbox" id="speak"><span></span>Speak decoded words aloud</label>
+        <label class="switch"><input type="checkbox" id="autoDetect"><span></span>Hands-free: detect words automatically</label>
+        <div id="autoBox" hidden>
+          <div class="row"><button class="btn" id="calibrateBtn">Calibrate (lips closed, 2 s)</button><span class="fine" id="segState">Not calibrated</span></div>
+          <div class="meter"><div id="segLevel"></div><i id="segThresh"></i></div>
+        </div>
+      </div>
+      <details class="card">
+        <summary class="card-title">Tuning</summary>
+        <label class="slider">Trigger sensitivity <output id="sensOut"></output><input type="range" id="sens" min="1.5" max="12" step="0.1"></label>
+        <label class="slider">Max distance <output id="maxdOut"></output><input type="range" id="maxd" min="0.1" max="3" step="0.05"></label>
+        <label class="slider">Min margin <output id="marginOut"></output><input type="range" id="margin" min="0" max="0.5" step="0.01"></label>
+        <div class="ranked" id="ranked"></div>
+      </details>
+    </section>
+
+    <!-- DATA -->
+    <section class="panel" id="panel-data" hidden>
+      <div class="card">
+        <div class="card-title">Your training data</div>
+        <div id="dataSummary" class="fine"></div>
+        <div class="row">
+          <button class="btn" id="exportBtn">Export</button>
+          <label class="btn">Import<input type="file" id="importFile" accept="application/json,.json" hidden></label>
+        </div>
+        <p class="fine">Files are compatible with the Windows HushCam app. Data is stored only in this browser.</p>
+      </div>
+      <div class="card">
+        <div class="card-title">Camera</div>
+        <div class="row">
+          <button class="btn" id="flipBtn">Switch camera</button>
+          <label class="switch"><input type="checkbox" id="mirror"><span></span>Mirror preview</label>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Install</div>
+        <p class="fine">On iPhone: tap <b>Share</b> → <b>Add to Home Screen</b>. Hush then opens full-screen and works offline after the first load.</p>
+      </div>
+      <div class="card">
+        <button class="btn ghost danger" id="resetBtn">Delete all takes</button>
+      </div>
+    </section>
+  </main>
+
+  <div class="dock">
+    <button class="hold" id="holdBtn" aria-label="Hold to capture a word"><span class="hold-ring"></span><span id="holdText">Hold to capture</span></button>
+    <nav class="tabs" role="tablist">
+      <button role="tab" data-tab="train" aria-selected="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3.5" fill="currentColor"/></svg>Train</button>
+      <button role="tab" data-tab="check"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Check</button>
+      <button role="tab" data-tab="decode"><svg viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>Decode</button>
+      <button role="tab" data-tab="data"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="6" rx="7" ry="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M5 6v12c0 1.7 3.1 3 7 3s7-1.3 7-3V6M5 12c0 1.7 3.1 3 7 3s7-1.3 7-3" fill="none" stroke="currentColor" stroke-width="2"/></svg>Data</button>
+    </nav>
+  </div>
+  <div class="toast" id="toast" role="status" hidden></div>
+</div>
+<script type="module" src="app.js"></script>
+</body>
+</html>

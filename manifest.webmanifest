@@ -1,0 +1,16 @@
+{
+  "name": "Hush: silent speech",
+  "short_name": "Hush",
+  "description": "Mouth words at your camera and Hush turns them into text. Runs entirely on-device.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f0f13",
+  "theme_color": "#5b4fe0",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
