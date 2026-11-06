@@ -185,20 +185,29 @@ async function main() {
   if (prevPath && existsSync(prevPath)) {
     try { previous = JSON.parse(readFileSync(prevPath, "utf8")); } catch { console.log("Previous feed unreadable, starting fresh"); }
   }
+  // Query every source and merge: whichever picks up a new post first gets it into the feed.
+  // Later sources only fill gaps; an earlier source's copy of a post wins.
   const attempts = [];
-  let fresh = null, used = null;
-  for (const s of SOURCES) {
+  let fresh = null, used = [];
+  const results = await Promise.all(SOURCES.map(async (s) => {
     try {
       const posts = await s.load();
       const withText = posts.filter((p) => p.text || p.media.length).length;
       console.log(`${s.name}: ${posts.length} posts (${withText} with content), newest ${posts[0]?.createdAt ?? "-"}`);
       attempts.push({ source: s.name, ok: posts.length > 0, posts: posts.length });
-      if (posts.length) { fresh = posts; used = s.name; break; }
+      return posts;
     } catch (e) {
       console.log(`${s.name}: failed (${e.message})`);
       attempts.push({ source: s.name, ok: false, error: e.message });
+      return [];
     }
+  }));
+  for (let i = results.length - 1; i >= 0; i--) {
+    if (!results[i].length) continue;
+    fresh = merge(results[i], fresh ?? []);
+    used.unshift(SOURCES[i].name);
   }
+  used = used.join(" + ") || null;
   const now = new Date().toISOString();
   const out = {
     account: "@realDonaldTrump",

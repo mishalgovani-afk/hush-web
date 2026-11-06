@@ -1,5 +1,5 @@
 // Offline support: cache the app shell on install, everything else (MediaPipe WASM, model) on first use.
-const VERSION = "hush-v1";
+const VERSION = "hush-v2";
 const SHELL = ["./", "index.html", "styles.css", "app.js", "core.js", "manifest.webmanifest", "icons/icon.svg"];
 
 self.addEventListener("install", (e) => {

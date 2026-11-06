@@ -203,7 +203,7 @@ table.confusion td { min-width: 36px; height: 32px; text-align: center; border-r
 .hold-ring { position: absolute; inset: 0; border-radius: inherit; pointer-events: none; }
 .hold.active .hold-ring { animation: pulse 1s ease-out infinite; }
 @keyframes pulse { from { box-shadow: 0 0 0 0 color-mix(in srgb, var(--rec) 60%, transparent); } to { box-shadow: 0 0 0 14px transparent; } }
-.tabs { display: grid; grid-template-columns: repeat(4, 1fr); margin-top: 6px; }
+.tabs { display: grid; grid-template-columns: repeat(5, 1fr); margin-top: 6px; }
 .tabs button {
   display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 0 2px; border: 0; background: none;
   color: var(--muted); font-size: 11px; font-weight: 600; cursor: pointer; min-height: 44px;
@@ -220,3 +220,31 @@ table.confusion td { min-width: 36px; height: 32px; text-align: center; border-r
 @media (min-width: 700px) {
   .stage { max-height: 360px; }
 }
+
+/* Feed */
+body.feed-mode .stage { display: none; }
+.tabs button { position: relative; }
+.tab-badge {
+  position: absolute; top: 2px; left: calc(50% + 6px); min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px;
+  background: var(--rec); color: #fff; font-size: 11px; line-height: 18px; font-weight: 700;
+}
+.feed-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.feed-list { display: flex; flex-direction: column; gap: 10px; }
+.post { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; }
+.post.new { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+.post-meta { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+.post-meta .avatar { width: 30px; height: 30px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); display: grid; place-items: center; font-weight: 800; font-size: 12px; flex: none; }
+.post-meta strong { color: var(--text); font-size: 14px; }
+.post-meta time { margin-left: auto; white-space: nowrap; }
+.post-repost { font-size: 12px; font-weight: 600; color: var(--muted); margin: 8px 0 0; }
+.post-text { margin: 8px 0 0; font-size: 16px; line-height: 1.45; white-space: pre-wrap; overflow-wrap: anywhere; }
+.post-text a { color: var(--accent); }
+.post-text.empty { color: var(--muted); font-style: italic; font-size: 14px; }
+.post-media { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 6px; margin-top: 10px; }
+.post-media a { position: relative; display: block; border-radius: 10px; overflow: hidden; background: var(--surface-2); aspect-ratio: 16 / 10; }
+.post-media img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.post-media .play { position: absolute; inset: 0; display: grid; place-items: center; color: #fff; font-size: 28px; text-shadow: 0 1px 6px rgba(0,0,0,.6); }
+.post-foot { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 10px; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.post-foot a { margin-left: auto; color: var(--accent); font-weight: 600; text-decoration: none; }
+.feed-note { margin-top: 14px; }
+.feed-empty { text-align: center; padding: 24px 12px; color: var(--muted); }
