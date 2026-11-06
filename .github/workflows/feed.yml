@@ -1,0 +1,40 @@
+# Refreshes feed.json (latest @realDonaldTrump Truth Social posts) on the `feed-data` branch.
+# The web app's Feed tab reads it from raw.githubusercontent.com, which allows cross-site reads.
+name: Refresh Truth Social feed
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"   # GitHub's minimum; runs can start a few minutes late
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: feed
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: scripts
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Load previous feed
+        run: |
+          git fetch --depth=1 origin feed-data 2>/dev/null && git show origin/feed-data:feed.json > previous.json || echo "No previous feed yet"
+      - name: Fetch posts
+        run: node scripts/fetch-feed.mjs previous.json feed.json
+      - name: Publish to feed-data branch (single commit, force-pushed)
+        run: |
+          mkdir publish && cp feed.json publish/
+          cd publish
+          git init -q -b feed-data
+          git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" add feed.json
+          git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" commit -qm "Update feed"
+          git push -fq "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" feed-data
